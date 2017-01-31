@@ -412,6 +412,7 @@ function inputTextareaDirective($mdUtil, $window, $mdAria, $timeout, $mdGesture)
       var maxRows = attr.hasOwnProperty('maxRows') ? parseInt(attr.maxRows) : NaN;
       var lineHeight = null;
       var node = element[0];
+      var container = containerCtrl.element[0];
 
       // This timeout is necessary, because the browser needs a little bit
       // of time to calculate the `clientHeight` and `scrollHeight`.
@@ -439,42 +440,54 @@ function inputTextareaDirective($mdUtil, $window, $mdAria, $timeout, $mdGesture)
       scope.$on('$destroy', disableAutogrow);
 
       function growTextarea() {
-        // temporarily disables element's flex so its height 'runs free'
-        element
-          .attr('rows', 1)
-          .css('height', 'auto')
-          .addClass('md-no-flex');
+        // sets the md-input-container height to avoid jumping around
+        container.style.height = container.offsetHeight + 'px';
 
-        var height = getHeight();
+        $timeout(doGrow, 0, false);
 
-        if (!lineHeight) {
-          // offsetHeight includes padding which can throw off our value
-          lineHeight = element.css('padding', 0).prop('offsetHeight');
-          element.css('padding', null);
-        }
+        function doGrow() {
+          // temporarily disables element's flex so its height 'runs free'
+          element
+            .attr('rows', 1)
+            .css('height', 'auto')
+            .addClass('md-no-flex');
 
-        if (minRows && lineHeight) {
-          height = Math.max(height, lineHeight * minRows);
-        }
+          var height = getHeight();
 
-        if (maxRows && lineHeight) {
-          var maxHeight = lineHeight * maxRows;
-
-          if (maxHeight < height) {
-            element.attr('md-no-autogrow', '');
-            height = maxHeight;
-          } else {
-            element.removeAttr('md-no-autogrow');
+          if (!lineHeight) {
+            // offsetHeight includes padding which can throw off our value
+            lineHeight = element.css('padding', 0).prop('offsetHeight');
+            element.css('padding', null);
           }
-        }
 
-        if (lineHeight) {
-          element.attr('rows', Math.round(height / lineHeight));
-        }
+          if (minRows && lineHeight) {
+            height = Math.max(height, lineHeight * minRows);
+          }
 
-        element
-          .css('height', height + 'px')
-          .removeClass('md-no-flex');
+          if (maxRows && lineHeight) {
+            var maxHeight = lineHeight * maxRows;
+
+            if (maxHeight < height) {
+              element.attr('md-no-autogrow', '');
+              height = maxHeight;
+            } else {
+              element.removeAttr('md-no-autogrow');
+            }
+          }
+
+          if (lineHeight) {
+            element.attr('rows', Math.round(height / lineHeight));
+          }
+
+          element
+            .css('height', height + 'px')
+            .removeClass('md-no-flex');
+
+          // $timeout(function finishGrow() {
+            container.style.height = 'auto';
+          // }, 0, false);
+
+        }
       }
 
       function getHeight() {
